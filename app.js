@@ -11,25 +11,86 @@ const App = () => {
   const [recommendations, setRecommendations] = useState(null);
   const [showForm, setShowForm] = useState(true);
   const [healthData, setHealthData] = useState({
-    baseRecommendations: ["https://docs.google.com/spreadsheets/d/e/2PACX-1vTqRQh6W8Tegpkwb2n7gSnF0VipG4oslFISrwoDREGvOeRPAswoy89kmdIu5QLC3Bpw-FOi7ABIW5Uk/pub?output=csv"],
-    ageSpecificRecommendations: {"https://docs.google.com/spreadsheets/d/e/2PACX-1vQZTAtueoIw16S24UPkwCt8T24BuDg-8T1S3W_5VbfdVxQH5A-0iu02Bw_3HalSqMPFU8A9KRlHkL_A/pub?gid=0&single=true&output=csv"}
+    baseRecommendations: [],
+    ageSpecificRecommendations: {}
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Google Sheet URLs - replace these with your published Google Sheet URLs
-  // For example:
-  // const baseRecommendationsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQoJTXLUh8DsW9...../pub?output=csv";
-  // const ageSpecificRecommendationsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2q6R3j...../pub?output=csv";
-  
-  // Until you add your actual URLs, we'll use the mock data below
+  // Google Sheet URLs with your actual published data
+  const baseRecommendationsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqRQh6W8Tegpkwb2n7gSnF0VipG4oslFISrwoDREGvOeRPAswoy89kmdIu5QLC3Bpw-FOi7ABIW5Uk/pub?output=csv";
+  const ageSpecificRecommendationsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZTAtueoIw16S24UPkwCt8T24BuDg-8T1S3W_5VbfdVxQH5A-0iu02Bw_3HalSqMPFU8A9KRlHkL_A/pub?output=csv";
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Mock data for base recommendations (all ages)
+        // Try to fetch the data from Google Sheets first
+        try {
+          // Fetch base recommendations
+          const baseResponse = await fetch(baseRecommendationsUrl);
+          if (!baseResponse.ok) throw new Error("Failed to fetch base recommendations");
+          const baseText = await baseResponse.text();
+          
+          // Fetch age-specific recommendations
+          const ageSpecificResponse = await fetch(ageSpecificRecommendationsUrl);
+          if (!ageSpecificResponse.ok) throw new Error("Failed to fetch age-specific recommendations");
+          const ageSpecificText = await ageSpecificResponse.text();
+          
+          // Parse CSV data
+          const baseResults = Papa.parse(baseText, {
+            header: true,
+            skipEmptyLines: true
+          });
+          
+          const ageSpecificResults = Papa.parse(ageSpecificText, {
+            header: true,
+            skipEmptyLines: true
+          });
+          
+          // Process age-specific data
+          const ageSpecificRecs = {};
+          ageSpecificResults.data.forEach(row => {
+            if (!ageSpecificRecs[row.ageGroup]) {
+              ageSpecificRecs[row.ageGroup] = {
+                all: [],
+                female: [],
+                male: []
+              };
+            }
+            
+            const test = {
+              test: row.test,
+              frequency: row.frequency,
+              notes: row.notes,
+              riskFactors: row.riskFactors ? row.riskFactors.split(', ') : ['all']
+            };
+            
+            if (row.gender === 'all') {
+              ageSpecificRecs[row.ageGroup].all.push(test);
+            } else {
+              ageSpecificRecs[row.ageGroup][row.gender].push(test);
+            }
+          });
+          
+          setHealthData({
+            baseRecommendations: baseResults.data.map(item => ({
+              ...item,
+              riskFactors: item.riskFactors ? item.riskFactors.split(', ') : ['all']
+            })),
+            ageSpecificRecommendations: ageSpecificRecs
+          });
+          
+          setLoading(false);
+          return; // Exit if Google Sheets fetch worked
+        } catch (err) {
+          console.error("Error fetching from Google Sheets, falling back to mock data:", err);
+          // Fall back to mock data if Google Sheets fetch fails
+        }
+        
+        // If Google Sheets fetch failed, use mock data as fallback
+        console.log("Using mock data");
         const mockBaseData = `test,frequency,notes,riskFactors
 Annual physical exam,Yearly,General health assessment,all
 Blood pressure screening,At least yearly,More frequently if borderline or elevated,all
@@ -372,6 +433,7 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
       
       <div className="mt-8 pt-4 border-t text-xs text-gray-500">
         <p>Health recommendation data is maintained in Google Sheets for easy updates and management.</p>
+        <p className="mt-1">Last updated: March 10, 2025</p>
       </div>
     </div>
   );
