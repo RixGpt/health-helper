@@ -9,10 +9,12 @@ const App = () => {
   const [alcoholConsumption, setAlcoholConsumption] = useState('');
   const [physicalActivity, setPhysicalActivity] = useState('');
   const [recommendations, setRecommendations] = useState(null);
+  const [fitnessRecommendations, setFitnessRecommendations] = useState(null);
   const [showForm, setShowForm] = useState(true);
   const [healthData, setHealthData] = useState({
     baseRecommendations: [],
-    ageSpecificRecommendations: {}
+    ageSpecificRecommendations: {},
+    fitnessRecommendations: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,6 +22,7 @@ const App = () => {
   // GitHub-hosted CSV file URLs (assuming they're in the same repository)
   const baseRecommendationsUrl = "base-recs.csv";
   const ageSpecificRecommendationsUrl = "age-specific-recs.csv";
+  const fitnessRecommendationsUrl = "physical-fitness-recommendations.csv";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +41,12 @@ const App = () => {
           if (!ageSpecificResponse.ok) throw new Error(`Failed to fetch age-specific recommendations (${ageSpecificResponse.status})`);
           const ageSpecificText = await ageSpecificResponse.text();
           
-          console.log("Successfully fetched CSV files");
+          // Fetch fitness recommendations
+          const fitnessResponse = await fetch(fitnessRecommendationsUrl);
+          if (!fitnessResponse.ok) throw new Error(`Failed to fetch fitness recommendations (${fitnessResponse.status})`);
+          const fitnessText = await fitnessResponse.text();
+          
+          console.log("Successfully fetched all CSV files");
           
           // Parse CSV data
           const baseResults = Papa.parse(baseText, {
@@ -51,8 +59,14 @@ const App = () => {
             skipEmptyLines: true
           });
           
+          const fitnessResults = Papa.parse(fitnessText, {
+            header: true,
+            skipEmptyLines: true
+          });
+          
           console.log("Base recommendations parsed:", baseResults.data.length, "records");
           console.log("Age-specific recommendations parsed:", ageSpecificResults.data.length, "records");
+          console.log("Fitness recommendations parsed:", fitnessResults.data.length, "records");
           
           // Process age-specific data
           const ageSpecificRecs = {};
@@ -84,7 +98,11 @@ const App = () => {
               ...item,
               riskFactors: item.riskFactors ? item.riskFactors.split(', ') : ['all']
             })),
-            ageSpecificRecommendations: ageSpecificRecs
+            ageSpecificRecommendations: ageSpecificRecs,
+            fitnessRecommendations: fitnessResults.data.map(item => ({
+              ...item,
+              riskFactors: item.riskFactors ? item.riskFactors.split(', ') : ['all']
+            }))
           });
           
           setLoading(false);
@@ -238,7 +256,7 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
     else if (ageNum >= 50 && ageNum <= 64) ageGroup = "50-64";
     else if (ageNum >= 65) ageGroup = "65+";
     
-    // Get recommendations from our data
+    // Get health screening recommendations
     const baseRecs = healthData.baseRecommendations.filter(isApplicableRecommendation);
     let ageSpecificRecs = [];
     
@@ -255,6 +273,18 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
     }
     
     setRecommendations([...baseRecs, ...ageSpecificRecs]);
+    
+    // Get fitness recommendations
+    const allAgeFitnessRecs = healthData.fitnessRecommendations
+      .filter(rec => rec.ageGroup === 'all')
+      .filter(isApplicableRecommendation);
+      
+    const ageSpecificFitnessRecs = healthData.fitnessRecommendations
+      .filter(rec => rec.ageGroup === ageGroup)
+      .filter(isApplicableRecommendation);
+      
+    setFitnessRecommendations([...allAgeFitnessRecs, ...ageSpecificFitnessRecs]);
+    
     setShowForm(false);
   };
 
@@ -383,36 +413,75 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
       ) : (
         <div>
           <div className="bg-blue-50 p-6 rounded-lg mb-6">
-            <h3 className="text-xl font-semibold mb-4">Your Recommended Health Screenings</h3>
+            <h3 className="text-xl font-semibold mb-4">Your Personalized Health Plan</h3>
             <p className="mb-2 text-gray-700">Age: {age}</p>
             {gender && <p className="mb-2 text-gray-700">Gender: {gender}</p>}
             {smokingStatus && <p className="mb-2 text-gray-700">Smoking Status: {smokingStatus === 'yes' ? 'Current or recent smoker' : 'Non-smoker'}</p>}
             {alcoholConsumption && <p className="mb-2 text-gray-700">Alcohol Consumption: {alcoholConsumption}</p>}
             {physicalActivity && <p className="mb-4 text-gray-700">Physical Activity: {physicalActivity}</p>}
             <div className="italic text-sm text-gray-600 mb-4">
-              Note: These are general guidelines. Please consult with your healthcare provider for personalized advice.
+              Note: These are general guidelines. Please consult with healthcare providers for personalized advice.
             </div>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-3 px-4 text-left border-b">Screening/Test</th>
-                  <th className="py-3 px-4 text-left border-b">Frequency</th>
-                  <th className="py-3 px-4 text-left border-b">Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recommendations.map((rec, index) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                    <td className="py-3 px-4 border-b font-medium">{rec.test}</td>
-                    <td className="py-3 px-4 border-b">{rec.frequency === 'Eye exam frequency based on age' ? getEyeExamFrequency(age) : rec.frequency}</td>
-                    <td className="py-3 px-4 border-b text-gray-600">{rec.notes}</td>
+          {/* Health Screenings Section */}
+          <div className="mb-8">
+            <div className="bg-blue-600 text-white p-4 rounded-t-lg">
+              <h3 className="text-xl font-bold">Recommended Health Screenings</h3>
+            </div>
+            
+            <div className="overflow-x-auto border border-gray-200 rounded-b-lg">
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr className="bg-blue-100">
+                    <th className="py-3 px-4 text-left border-b">Screening/Test</th>
+                    <th className="py-3 px-4 text-left border-b">Frequency</th>
+                    <th className="py-3 px-4 text-left border-b">Notes</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recommendations.map((rec, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                      <td className="py-3 px-4 border-b font-medium">{rec.test}</td>
+                      <td className="py-3 px-4 border-b">{rec.frequency === 'Eye exam frequency based on age' ? getEyeExamFrequency(age) : rec.frequency}</td>
+                      <td className="py-3 px-4 border-b text-gray-600">{rec.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          {/* Physical Activity Section */}
+          <div className="mb-8">
+            <div className="bg-green-600 text-white p-4 rounded-t-lg">
+              <h3 className="text-xl font-bold">Recommended Physical Activity</h3>
+            </div>
+            
+            <div className="overflow-x-auto border border-gray-200 rounded-b-lg">
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr className="bg-green-100">
+                    <th className="py-3 px-4 text-left border-b">Activity Type</th>
+                    <th className="py-3 px-4 text-left border-b">Frequency</th>
+                    <th className="py-3 px-4 text-left border-b">Duration</th>
+                    <th className="py-3 px-4 text-left border-b">Intensity</th>
+                    <th className="py-3 px-4 text-left border-b">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fitnessRecommendations && fitnessRecommendations.map((rec, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                      <td className="py-3 px-4 border-b font-medium">{rec.activityType}</td>
+                      <td className="py-3 px-4 border-b">{rec.frequency}</td>
+                      <td className="py-3 px-4 border-b">{rec.duration}</td>
+                      <td className="py-3 px-4 border-b">{rec.intensity}</td>
+                      <td className="py-3 px-4 border-b text-gray-600">{rec.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           
           <div className="mt-6">
@@ -430,6 +499,7 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
                 <li>Your personal health history may require different screenings or frequencies.</li>
                 <li>Always consult with your healthcare provider for personalized advice.</li>
                 <li>Some screenings may start earlier if you have family history or risk factors.</li>
+                <li>Start any new exercise program gradually, especially if you've been inactive.</li>
               </ul>
             </div>
           </div>
@@ -437,8 +507,8 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
       )}
       
       <div className="mt-8 pt-4 border-t text-xs text-gray-500">
-        <p>Health recommendation data is maintained in Google Sheets for easy updates and management.</p>
-        <p className="mt-1">Last updated: March 10, 2025</p>
+        <p>Health and fitness recommendation data is maintained for easy updates and management.</p>
+        <p className="mt-1">Last updated: March 11, 2025</p>
       </div>
     </div>
   );
