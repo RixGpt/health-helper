@@ -1,0 +1,13 @@
+test,frequency,notes,riskFactors
+Annual physical exam,Yearly,General health assessment,all
+Blood pressure screening,At least yearly,More frequently if borderline or elevated,all
+Cholesterol screening,Every 4-6 years,More frequently if risk factors present,all
+Depression screening,As needed,Discuss mental health with healthcare provider,all
+Dental exam,Every 6 months,Preventive dental care,all
+Eye exam,Every 2-3 years (under 40) or Yearly (40+),Vision and eye health,all
+Skin check,Yearly,Self-exam monthly professional exam yearly,all
+Liver function tests,Yearly,To monitor liver health,"smoker, heavyDrinker"
+Lung function tests,Yearly,Spirometry and other breathing tests,smoker
+Nutrition counseling,Yearly,Dietary recommendations and guidance,sedentary
+Exercise consultation,Yearly,Personalized activity recommendations,sedentary
+Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heavyDrinker, sedentary"
