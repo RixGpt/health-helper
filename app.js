@@ -17,26 +17,28 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Google Sheet URLs with your actual published data
-  const baseRecommendationsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqRQh6W8Tegpkwb2n7gSnF0VipG4oslFISrwoDREGvOeRPAswoy89kmdIu5QLC3Bpw-FOi7ABIW5Uk/pub?output=csv";
-  const ageSpecificRecommendationsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZTAtueoIw16S24UPkwCt8T24BuDg-8T1S3W_5VbfdVxQH5A-0iu02Bw_3HalSqMPFU8A9KRlHkL_A/pub?output=csv";
+  // GitHub-hosted CSV file URLs (assuming they're in the same repository)
+  const baseRecommendationsUrl = "base-recs.csv";
+  const ageSpecificRecommendationsUrl = "age-specific-recs.csv";
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Try to fetch the data from Google Sheets first
+        // Try to fetch the data from local CSV files
         try {
           // Fetch base recommendations
           const baseResponse = await fetch(baseRecommendationsUrl);
-          if (!baseResponse.ok) throw new Error("Failed to fetch base recommendations");
+          if (!baseResponse.ok) throw new Error(`Failed to fetch base recommendations (${baseResponse.status})`);
           const baseText = await baseResponse.text();
           
           // Fetch age-specific recommendations
           const ageSpecificResponse = await fetch(ageSpecificRecommendationsUrl);
-          if (!ageSpecificResponse.ok) throw new Error("Failed to fetch age-specific recommendations");
+          if (!ageSpecificResponse.ok) throw new Error(`Failed to fetch age-specific recommendations (${ageSpecificResponse.status})`);
           const ageSpecificText = await ageSpecificResponse.text();
+          
+          console.log("Successfully fetched CSV files");
           
           // Parse CSV data
           const baseResults = Papa.parse(baseText, {
@@ -48,6 +50,9 @@ const App = () => {
             header: true,
             skipEmptyLines: true
           });
+          
+          console.log("Base recommendations parsed:", baseResults.data.length, "records");
+          console.log("Age-specific recommendations parsed:", ageSpecificResults.data.length, "records");
           
           // Process age-specific data
           const ageSpecificRecs = {};
