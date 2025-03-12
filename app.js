@@ -453,36 +453,38 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
           </div>
           
           {/* Physical Activity Section */}
-          <div className="mb-8">
-            <div className="bg-green-600 text-white p-4 rounded-t-lg">
-              <h3 className="text-xl font-bold">Recommended Physical Activity</h3>
-            </div>
-            
-            <div className="overflow-x-auto border border-gray-200 rounded-b-lg">
-              <table className="min-w-full bg-white">
-                <thead>
-                  <tr className="bg-green-100">
-                    <th className="py-3 px-4 text-left border-b">Activity Type</th>
-                    <th className="py-3 px-4 text-left border-b">Frequency</th>
-                    <th className="py-3 px-4 text-left border-b">Duration</th>
-                    <th className="py-3 px-4 text-left border-b">Intensity</th>
-                    <th className="py-3 px-4 text-left border-b">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fitnessRecommendations && fitnessRecommendations.map((rec, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="py-3 px-4 border-b font-medium">{rec.activityType}</td>
-                      <td className="py-3 px-4 border-b">{rec.frequency}</td>
-                      <td className="py-3 px-4 border-b">{rec.duration}</td>
-                      <td className="py-3 px-4 border-b">{rec.intensity}</td>
-                      <td className="py-3 px-4 border-b text-gray-600">{rec.notes}</td>
+          {fitnessRecommendations && fitnessRecommendations.length > 0 && (
+            <div className="mb-8">
+              <div className="bg-green-600 text-white p-4 rounded-t-lg">
+                <h3 className="text-xl font-bold">Recommended Physical Activity</h3>
+              </div>
+              
+              <div className="overflow-x-auto border border-gray-200 rounded-b-lg">
+                <table className="min-w-full bg-white">
+                  <thead>
+                    <tr className="bg-green-100">
+                      <th className="py-3 px-4 text-left border-b">Activity Type</th>
+                      <th className="py-3 px-4 text-left border-b">Frequency</th>
+                      <th className="py-3 px-4 text-left border-b">Duration</th>
+                      <th className="py-3 px-4 text-left border-b">Intensity</th>
+                      <th className="py-3 px-4 text-left border-b">Notes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {fitnessRecommendations.map((rec, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td className="py-3 px-4 border-b font-medium">{rec.activityType}</td>
+                        <td className="py-3 px-4 border-b">{rec.frequency}</td>
+                        <td className="py-3 px-4 border-b">{rec.duration}</td>
+                        <td className="py-3 px-4 border-b">{rec.intensity}</td>
+                        <td className="py-3 px-4 border-b text-gray-600">{rec.notes}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="mt-6">
             <button
