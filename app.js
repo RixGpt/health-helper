@@ -22,7 +22,7 @@ const App = () => {
   // GitHub-hosted CSV file URLs (assuming they're in the same repository)
   const baseRecommendationsUrl = "base-recs.csv";
   const ageSpecificRecommendationsUrl = "age-specific-recs.csv";
-  const fitnessRecommendationsUrl = "physical-fitness-recommendations.csv";
+  const fitnessRecommendationsUrl = "physical-fitness-recs.csv";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,6 +231,9 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
 
   // Determine if a recommendation applies based on risk factors
   const isApplicableRecommendation = (recommendation) => {
+    // Safety check - if recommendation is undefined, return false
+    if (!recommendation || !recommendation.riskFactors) return false;
+    
     // If the recommendation applies to all, include it
     if (recommendation.riskFactors.includes('all')) {
       return true;
@@ -256,17 +259,28 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
     else if (ageNum >= 50 && ageNum <= 64) ageGroup = "50-64";
     else if (ageNum >= 65) ageGroup = "65+";
     
-    // Get health screening recommendations
-    const baseRecs = healthData.baseRecommendations.filter(isApplicableRecommendation);
+    // Get health screening recommendations - with safety checks
+    let baseRecs = [];
     let ageSpecificRecs = [];
     
-    if (healthData.ageSpecificRecommendations[ageGroup]) {
+    // Safely filter base recommendations
+    if (Array.isArray(healthData.baseRecommendations)) {
+      baseRecs = healthData.baseRecommendations.filter(isApplicableRecommendation);
+    }
+    
+    // Safely get age-specific recommendations
+    if (healthData.ageSpecificRecommendations && 
+        healthData.ageSpecificRecommendations[ageGroup]) {
+      
       // Add general recommendations for this age group
-      const generalRecs = healthData.ageSpecificRecommendations[ageGroup].all.filter(isApplicableRecommendation);
-      ageSpecificRecs = [...generalRecs];
+      if (Array.isArray(healthData.ageSpecificRecommendations[ageGroup].all)) {
+        const generalRecs = healthData.ageSpecificRecommendations[ageGroup].all.filter(isApplicableRecommendation);
+        ageSpecificRecs = [...generalRecs];
+      }
       
       // Add gender-specific recommendations
-      if (gender === 'female' || gender === 'male') {
+      if ((gender === 'female' || gender === 'male') && 
+          Array.isArray(healthData.ageSpecificRecommendations[ageGroup][gender])) {
         const genderRecs = healthData.ageSpecificRecommendations[ageGroup][gender].filter(isApplicableRecommendation);
         ageSpecificRecs = [...ageSpecificRecs, ...genderRecs];
       }
@@ -274,14 +288,20 @@ Heart health assessment,Yearly,Additional cardiovascular screening,"smoker, heav
     
     setRecommendations([...baseRecs, ...ageSpecificRecs]);
     
-    // Get fitness recommendations
-    const allAgeFitnessRecs = healthData.fitnessRecommendations
-      .filter(rec => rec.ageGroup === 'all')
-      .filter(isApplicableRecommendation);
-      
-    const ageSpecificFitnessRecs = healthData.fitnessRecommendations
-      .filter(rec => rec.ageGroup === ageGroup)
-      .filter(isApplicableRecommendation);
+    // Get fitness recommendations - with safety checks
+    let allAgeFitnessRecs = [];
+    let ageSpecificFitnessRecs = [];
+    
+    // Safely filter fitness recommendations
+    if (Array.isArray(healthData.fitnessRecommendations)) {
+      allAgeFitnessRecs = healthData.fitnessRecommendations
+        .filter(rec => rec && rec.ageGroup === 'all')
+        .filter(isApplicableRecommendation);
+        
+      ageSpecificFitnessRecs = healthData.fitnessRecommendations
+        .filter(rec => rec && rec.ageGroup === ageGroup)
+        .filter(isApplicableRecommendation);
+    }
       
     setFitnessRecommendations([...allAgeFitnessRecs, ...ageSpecificFitnessRecs]);
     
