@@ -2,19 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Health Helper</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Health Check Guide</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel" src="app.js"></script>
-  <script type="text/babel">
-    ReactDOM.render(<App />, document.getElementById('root'));
+<body class="bg-light">
+  <div class="container py-5">
+    <h1 class="mb-4">What Health Checks Should I Be Getting?</h1>
+    <form id="healthForm" class="mb-4">
+      <div class="mb-3">
+        <label for="age" class="form-label">Age</label>
+        <input type="number" class="form-control" id="age" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Sex at birth</label>
+        <select class="form-select" id="sex">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Smoking history</label>
+        <select class="form-select" id="smoking">
+          <option value="never">Never</option>
+          <option value="former">Former</option>
+          <option value="current">Current</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Exercise frequency</label>
+        <select class="form-select" id="exercise">
+          <option value="regular">Regular</option>
+          <option value="sometimes">Sometimes</option>
+          <option value="rarely">Rarely</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Family history of major illness?</label>
+        <select class="form-select" id="family">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+          <option value="unsure">Not sure</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Get Recommendations</button>
+    </form>
+    <div id="results" class="card p-4 d-none">
+      <h4 class="mb-3">Your Recommended Health Checks</h4>
+      <ul id="recommendationList" class="list-group"></ul>
+    </div>
+  </div>
+
+  <script>
+    const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbv0U9LYybqZF-mcv7mDM8xapzbU2BsedZKKZSklYmEeFHmysguCkLVZYHWJWSctjTA13HpvRLlfDQ/pub?gid=0&single=true&output=csv';
+
+    async function fetchHealthGuidelines() {
+      const res = await fetch(sheetCSVUrl);
+      const csvText = await res.text();
+      const rows = csvText.trim().split('\n').slice(1); // remove header row
+      return rows.map(row => {
+        const cols = row.split(',');
+        return {
+          test: cols[0],
+          minAge: parseInt(cols[1]),
+          maxAge: parseInt(cols[2]),
+          sex: cols[3],
+          smoking: cols[4],
+          exercise: cols[5],
+          family: cols[6],
+          frequency: cols[7],
+          note: cols[8] || ''
+        };
+      });
+    }
+
+    document.getElementById('healthForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const age = parseInt(document.getElementById('age').value);
+      const sex = document.getElementById('sex').value;
+      const smoking = document.getElementById('smoking').value;
+      const exercise = document.getElementById('exercise').value;
+      const family = document.getElementById('family').value;
+
+      const guidelines = await fetchHealthGuidelines();
+      const filtered = guidelines.filter(item => {
+        return (
+          age >= item.minAge && age <= item.maxAge &&
+          (item.sex === 'any' || item.sex === sex) &&
+          (item.smoking === 'any' || item.smoking === smoking) &&
+          (item.exercise === 'any' || item.exercise === exercise) &&
+          (item.family === 'any' || item.family === family)
+        );
+      });
+
+      const list = document.getElementById('recommendationList');
+      list.innerHTML = '';
+      filtered.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.innerHTML = `<strong>${item.test}</strong>: ${item.frequency}. <small>${item.note}</small>`;
+        list.appendChild(li);
+      });
+
+      document.getElementById('results').classList.remove('d-none');
+    });
   </script>
 </body>
 </html>
